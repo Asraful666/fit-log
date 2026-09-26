@@ -1,8 +1,14 @@
 "use client";
 
-import { createContext, useContext, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+
 import toast from "react-hot-toast";
-import { Workout, PlanWorkout } from "@/types";
+import { Workout, PlanWorkout } from "../types";
 
 interface PlanContextType {
   plan: PlanWorkout[];
@@ -32,10 +38,49 @@ export function PlanProvider({
 }) {
   const [plan, setPlan] = useState<PlanWorkout[]>([]);
   const [saved, setSaved] = useState<Workout[]>([]);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  // Load data from localStorage
+  useEffect(() => {
+    const storedPlan = localStorage.getItem("fitlog-plan");
+    const storedSaved = localStorage.getItem("fitlog-saved");
+
+    if (storedPlan) {
+      setPlan(JSON.parse(storedPlan));
+    }
+
+    if (storedSaved) {
+      setSaved(JSON.parse(storedSaved));
+    }
+
+    setIsHydrated(true);
+  }, []);
+
+  // Save plan
+  useEffect(() => {
+    if (isHydrated) {
+      localStorage.setItem(
+        "fitlog-plan",
+        JSON.stringify(plan)
+      );
+    }
+  }, [plan, isHydrated]);
+
+  // Save saved workouts
+  useEffect(() => {
+    if (isHydrated) {
+      localStorage.setItem(
+        "fitlog-saved",
+        JSON.stringify(saved)
+      );
+    }
+  }, [saved, isHydrated]);
 
   const addToPlan = (workout: Workout) => {
     if (plan.length >= 5) {
-      toast.error("Today's plan is full! Max 5 workouts.");
+      toast.error(
+        "Today's plan is full! Max 5 workouts."
+      );
       return;
     }
 
@@ -52,7 +97,9 @@ export function PlanProvider({
       },
     ]);
 
-    toast.success(`${workout.name} added to plan!`);
+    toast.success(
+      `${workout.name} added to plan!`
+    );
   };
 
   const addToSaved = (workout: Workout) => {
@@ -61,9 +108,14 @@ export function PlanProvider({
       return;
     }
 
-    setSaved((prev) => [...prev, workout]);
+    setSaved((prev) => [
+      ...prev,
+      workout,
+    ]);
 
-    toast.success(`${workout.name} saved for later!`);
+    toast.success(
+      `${workout.name} saved for later!`
+    );
   };
 
   const removeFromPlan = (id: number) => {
@@ -86,7 +138,10 @@ export function PlanProvider({
     setPlan((prev) =>
       prev.map((item) =>
         item.id === id
-          ? { ...item, isDone: true }
+          ? {
+              ...item,
+              isDone: true,
+            }
           : item
       )
     );
@@ -98,12 +153,14 @@ export function PlanProvider({
     exercises: plan.length,
 
     minutes: plan.reduce(
-      (total, item) => total + item.duration,
+      (total, item) =>
+        total + item.duration,
       0
     ),
 
     calories: plan.reduce(
-      (total, item) => total + item.caloriesBurned,
+      (total, item) =>
+        total + item.caloriesBurned,
       0
     ),
   };
